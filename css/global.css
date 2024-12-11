@@ -1,6 +1,6 @@
 :root {
     --background: #9c88ff;
-    --navbar-width: 256px;
+    --navbar-width: 190px;
     --navbar-width-min: 80px;
     --navbar-dark-primary: #18283b;
     --navbar-dark-secondary: #2c3e50;
@@ -220,7 +220,7 @@ label[for=nav-toggle] {
 
 .nav-button {
     position: relative;
-    margin-left: 16px;
+    margin-left: 7px;
     height: 54px;
     display: flex;
     align-items: center;

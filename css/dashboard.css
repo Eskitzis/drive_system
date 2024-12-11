@@ -1,0 +1,19 @@
+.dashboard{
+    display: flex;
+    margin-left: calc(var(--navbar-width) + 20px);
+    margin-top: 1vw;
+    height: calc(100vh - 20px);
+    column-gap: 12px;
+}
+.dashboard_settings{
+    flex: 1;
+    background-color: azure;
+    border-radius: 16px;
+    padding: 20px;
+}
+.dashboard_calendar{
+    flex: 5;
+    background-color: azure;
+    border-radius: 16px;
+    padding: 20px;
+}
