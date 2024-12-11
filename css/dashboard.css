@@ -1,22 +1,24 @@
-.dashboard{
+.dashboard {
     display: flex;
-    margin-left: calc(var(--navbar-width) + 20px);
+    margin-left: calc(var(--navbar-width) + 30px);
     margin-top: 1vw;
     height: calc(100vh - 2vw);
+    /* Fixed height based on viewport */
     column-gap: 12px;
+    overflow: hidden;
+    /* Prevent scrolling on the main dashboard container */
 }
-.dashboard_settings{
+
+.dashboard_settings,
+.dashboard_calendar {
+    overflow-y: auto;
+    /* Allow vertical scrolling within the containers */
+    overflow-x: hidden;
+    /* Prevent horizontal scrolling */
     flex: 1;
     background-color: azure;
     border-radius: 16px;
     padding: 20px;
-}
-.dashboard_calendar{
-    flex: 5;
-    background-color: azure;
-    border-radius: 16px;
-    padding: 20px;
-    margin-right: 10px;
 }
 form label {
     display: block;
@@ -24,6 +26,7 @@ form label {
     font-weight: bold;
     color: #333;
 }
+
 form input,
 form select,
 form button {
@@ -77,6 +80,14 @@ form button:active {
         padding: 8px;
     }
 }
+
+.dashboard_calendar {
+    flex: 5;
+    /* Larger size relative to settings */
+    margin-right: 10px;
+}
+
+/* Styling for the table and filter area */
 .list-filter {
     display: flex;
     gap: 10px;
@@ -92,16 +103,19 @@ form button:active {
 }
 
 .table-container {
-    max-height: 220px;
-    /* Set a maximum height for vertical scrolling */
+    height: 100%;
+    /* Use full height of the container */
     overflow-y: auto;
     /* Enable vertical scrolling */
     overflow-x: auto;
+    /* Enable horizontal scrolling */
 }
 
 table {
     border-collapse: collapse;
     margin-top: 10px;
+    width: 100%;
+    /* Ensure the table spans the container */
 }
 
 table th,
@@ -121,6 +135,7 @@ table tr:hover {
     background-color: #f9f9f9;
 }
 
+/* Responsive adjustments */
 @media (max-width: 480px) {
     .list-filter {
         flex-direction: column;
@@ -130,5 +145,12 @@ table tr:hover {
     .list-filter input,
     .list-filter select {
         width: 100%;
+    }
+
+    form input,
+    form select,
+    form button {
+        font-size: 12px;
+        padding: 8px;
     }
 }

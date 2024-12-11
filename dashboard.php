@@ -1,3 +1,7 @@
+<?php
+    session_start();
+    include('php/db_connection.php');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,27 +11,29 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js'></script>
     <title>Dashboard - Drive</title>
 </head>
 <body>
     <div id="nav-bar">
         <input id="nav-toggle" type="checkbox" />
-        <div id="nav-header"><a id="nav-title" href="dashboard.html" target="_blank"><img src="assets/racing.png" id="img_logo">RIVE</a>
+        <div id="nav-header"><a id="nav-title" href="dashboard.php" target="_blank"><img src="assets/racing.png" id="img_logo">RIVE</a>
             <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
             <hr />
         </div>
         <div id="nav-content">
-            <div class="nav-button" onclick="window.location.href = 'dashboard.html';"><i class='bx bxs-dashboard'></i><span>Dashboard</span></div>
+            <div class="nav-button" onclick="window.location.href = 'dashboard.php';"><i class='bx bxs-dashboard'></i><span>Dashboard</span></div>
             <hr />
-            <div class="nav-button" onclick="window.location.href = 'drives.html';"><i class='bx bxs-car-crash'></i><span>Drives</span></div>
+            <div class="nav-button" onclick="window.location.href = 'drives.php';"><i class='bx bxs-car-crash'></i><span>Drives</span></div>
             <hr />
             <div id="nav-content-highlight"></div>
         </div>
         <input id="nav-footer-toggle" type="checkbox" />
         <div id="nav-footer">
-            <div id="nav-footer-heading" onclick="window.location.href = 'settings.html';">
+            <div id="nav-footer-heading" onclick="window.location.href = 'settings.php';">
                 <div id="nav-footer-avatar"><img src="assets/logo.png" /></div>
-                <div id="nav-footer-titlebox"><a id="nav-footer-title" href="settings.html"
+                <div id="nav-footer-titlebox"><a id="nav-footer-title" href="settings.php"
                     >Toni</a><span id="nav-footer-subtitle">Einstellungen</span></div>
                 <label for="nav-footer-toggle"><i class="fas fa-caret-up"></i></label>
             </div>
@@ -37,24 +43,35 @@
         <div class="dashboard_settings">
             <form id="add_drive">
                 <select id="employee_name">
-                    <option value="1">Toni</option>
-                    <option value="2">Toni</option>
+                    <?php
+                    $stmt = $conn->prepare("SELECT * FROM users");
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<option value='" . $row['id'] . "'>" . $row['fullname'] . "</option>";
+                    }
+                    ?>
                 </select>
                 <select id="car_plate">
-                    <option value="1">DAH-HA 116</option>
+                    <?php
+                    $stmt = $conn->prepare("SELECT * FROM cars");
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<option value='" . $row['id'] . "'>" . $row['plate'] . "</option>";
+                    }
+                    ?>
                 </select>
                 <label for="date_drive">Datum:</label>
-                <input type="date" id="date_drive">
+                <input type="date" id="date_drive" required>
                 <label for="addr_start">Von:</label>
-                <input type="text" id="addr_start">
+                <input type="text" id="addr_start" required>
                 <label for="addr_end">Nach:</label>
-                <input type="text" id="addr_end">
-                <label for="km_driven">KM Gefahren:</label>
-                <input type="number" id="km_driven" disabled>
+                <input type="text" id="addr_end" required>
                 <label for="km_before">KM Vorher:</label>
-                <input type="number" id="km_before">
+                <input type="number" id="km_before" required>
                 <label for="km_now">KM Jetzt:</label>
-                <input type="number" id="km_now">
+                <input type="number" id="km_now" required>
                 <button type="submit">Drive hinzufügen</button>
             </form>
             <hr>
@@ -102,7 +119,7 @@
             </div>
         </div>
         <div class="dashboard_calendar">
-            Calendar
+            <div id="calendar"></div>
         </div>
     </div>
     <script src="js/dashboard.js"></script>
