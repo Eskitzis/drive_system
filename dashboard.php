@@ -1,8 +1,8 @@
 <?php
     session_start();
     include('php/db_connection.php');
-    $logged_id = $_SESSION['user_id'];
-    
+    $logged_id = $_SESSION['logged_id'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,18 +50,19 @@
                     $stmt->execute();
                     $result = $stmt->get_result();
                     while ($row = $result->fetch_assoc()) {
-                        echo "<option value='" . $row['id'] . "'>" . $row['fullname'] . "</option>";
+                        $selected = ($row['id'] == $_SESSION['logged_id']) ? "selected" : "";
+                        echo "<option value='" . $row['id'] . "' $selected>" . htmlspecialchars($row['fullname']) . "</option>";                    
                     }
                     ?>
                 </select>
                 <select id="car_plate">
                     <?php
-                    $stmt = $conn->prepare("SELECT * FROM cars");
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    while ($row = $result->fetch_assoc()) {
-                        echo "<option value='" . $row['id'] . "'>" . $row['plate'] . "</option>";
-                    }
+                        $stmt = $conn->prepare("SELECT * FROM cars");
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        while ($row = $result->fetch_assoc()) {
+                            echo "<option value='" . $row['id'] . "'>" . $row['plate'] . "</option>";
+                        }
                     ?>
                 </select>
                 <label for="date_drive">Datum:</label>
@@ -82,10 +83,10 @@
                     <input type="date" id="filter-date" placeholder="Filter by Date">
                     <select id="filter-plate">
                         <option value="">Filter by Plate</option>
-                        <option value="DAH-HA 116">DAH-HA 116</option>
-                        <option value="XYZ-123">XYZ-123</option>
+                        <!-- Plates will be populated dynamically -->
                     </select>
                 </div>
+
                 <div class="table-container">
                     <table>
                         <thead>
@@ -96,25 +97,8 @@
                                 <th>Plate</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>2024-12-01</td>
-                                <td>12000</td>
-                                <td>12250</td>
-                                <td>DAH-HA 116</td>
-                            </tr>
-                            <tr>
-                                <td>2024-12-02</td>
-                                <td>12250</td>
-                                <td>12500</td>
-                                <td>DAH-HA 116</td>
-                            </tr>
-                            <tr>
-                                <td>2024-12-03</td>
-                                <td>12500</td>
-                                <td>12700</td>
-                                <td>DAH-HA 116</td>
-                            </tr>
+                        <tbody id="drives-tbody">
+                            <!-- Data rows will be populated dynamically -->
                         </tbody>
                     </table>
                 </div>

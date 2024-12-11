@@ -43,7 +43,6 @@ $('#employee_name').change(function () {
 });
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
-
     // Calendar
     async function fetchAndRenderCalendar() {
         const selectedEmployeeId = document.getElementById('employee_name').value;
@@ -61,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let data = await response.json();
 
                     // Debugging: log the response to check drive_start and drive_end
-                    console.log('Fetched Data:', data);
+                    //console.log('Fetched Data:', data);
 
                     let events = data.map(drive => ({
                         id: drive.id,  // Include the drive ID to reference later
@@ -116,8 +115,112 @@ document.addEventListener('DOMContentLoaded', function () {
 
         calendar.render();
     }
-
     fetchAndRenderCalendar();
+
+    function fetchCarKilometers() {
+        const selectedCarId = document.getElementById('car_plate').value;
+
+        // Create a new XMLHttpRequest object
+        const xhr = new XMLHttpRequest();
+
+        // Configure it: GET-request for the URL with the car_id as a query parameter
+        xhr.open('GET', `php/get_car_kilometers.php?car_id=${selectedCarId}`, true);
+
+        // Set up what happens when the request is successfully completed
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // Parse the response JSON
+                const data = JSON.parse(xhr.responseText);
+                const kmBeforeElement = document.getElementById('km_before'); // The input element to fill
+
+                // Fill the km_before input field with the kilometers value
+                if (data.kilometers !== 'No kilometers found.' && data.kilometers !== 'Invalid car ID.') {
+                    kmBeforeElement.value = data.kilometers; // Set the value of the input field
+                } else {
+                    kmBeforeElement.value = ''; // Clear the input field if no kilometers found or invalid car ID
+                }
+            } else {
+                // If something went wrong with the request
+                console.error('Error fetching car kilometers:', xhr.statusText);
+            }
+        };
+
+        // Set up what happens in case of an error
+        xhr.onerror = function () {
+            console.error('Request failed');
+        };
+
+        // Send the request
+        xhr.send();
+    }
+
+    // Call the function when the page loads (or when a change happens)
+    fetchCarKilometers();
+
+    document.getElementById('car_plate').addEventListener('change', function () {
+        const car_plate = this.value;
+
+        if (car_plate) {
+            // Fetch drives data for the selected employee via AJAX
+            fetchDrivesData(car_plate);
+        }
+    });
+
+    document.querySelectorAll('.list-filter input, .list-filter select').forEach(input => {
+        input.addEventListener('input', () => {
+            filterDrivesTable();
+        });
+    });
+    function fetchDrivesData(car_plate) {
+        // Make the AJAX call to the server (adjust URL accordingly)
+        const url = `php/get_drives.php?employee_id=${car_plate}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                populateDrivesTable(data);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    }
+
+    function populateDrivesTable(data) {
+        const tbody = document.getElementById('drives-tbody');
+        tbody.innerHTML = ''; // Clear any existing rows
+
+        data.forEach(drive => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td>${drive.drive_date}</td>
+            <td>${drive.km_start}</td>
+            <td>${drive.km_end}</td>
+            <td>${drive.plate}</td>
+        `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function filterDrivesTable() {
+        const filters = {
+            date: document.getElementById('filter-date').value,
+            plate: document.getElementById('filter-plate').value.toLowerCase(),
+        };
+
+        const rows = document.querySelectorAll('#drives-tbody tr');
+        rows.forEach(row => {
+            const [date, , , plate] = row.children;
+
+            // Check if the row matches the date filter
+            const rowDate = new Date(date.textContent);
+            const filterDate = filters.date ? new Date(filters.date) : null;
+            const matchesDate = !filterDate || rowDate >= filterDate;
+
+            // Check if the row matches the plate filter
+            const matchesPlate = !filters.plate || plate.textContent.toLowerCase().includes(filters.plate);
+
+            // Show or hide the row based on the filters
+            row.style.display = matchesDate && matchesPlate ? '' : 'none';
+        });
+    }
+
     // When the form is submitted
     $('#add_drive').submit(function (e) {
         e.preventDefault(); // Prevent the default form submission

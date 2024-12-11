@@ -1,28 +1,50 @@
 <?php
+session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-//values passed from index form
-$email = $_POST['email'];
-$password = $_POST['password'];
-//prevent injections
-$email = stripcslashes($email);
-$password = stripcslashes($password);
 
-include('db_connection.php');
-//Query the database for user
-$result = mysqli_query($conn, "select * from users where email = '$email' and password = '$password'")
-    or die("Failed to query database" . mysql_error());
-$row = mysqli_fetch_array($result, MYSQLI_BOTH);
+// Include database connection
+include('php/db_connection.php');
 
-if ($row['email'] == $email && $row['password'] == $password) {
-    session_start();
-    $_SESSION['user_role'] = $row['user_role'];
-    $_SESSION['logged_id'] = $row['id'];
-    //ACTIVE SESSION
-    $session_id = session_id();
-    header("Location: dashboard.php");
-} else {
-    header("Location: index.html");
+// Check if the form is submitted via POST
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Get the values passed from the form
+    $email = $_POST['mail'];
+    $password = $_POST['pass'];
+
+    // Prevent injections
+    $email = stripslashes($email);
+    $password = stripslashes($password);
+
+    // Prepare the SQL query with parameterized inputs to prevent SQL injection
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email); // "s" means the parameter is a string
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // Check if the user exists
+    if ($result->num_rows > 0) {
+        // Fetch the user data
+        $row = $result->fetch_assoc();
+
+        // Check if the plain password matches the stored password
+        if ($password == $row['password']) {
+            // Successful login: Set session variables and send success response
+            $_SESSION['user_role'] = $row['user_role'];
+            $_SESSION['logged_id'] = $row['id'];
+            echo json_encode(['success' => true]);  // Respond with success
+        } else {
+            // Invalid password
+            echo json_encode(['success' => false, 'error' => 'Incorrect password.']);
+        }
+    } else {
+        // No user found with the provided email
+        echo json_encode(['success' => false, 'error' => 'User not found.']);
+    }
+
+    // Close the prepared statement and database connection
+    $stmt->close();
+    $conn->close();
 }
 ?>
