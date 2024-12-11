@@ -83,7 +83,14 @@
                     <input type="date" id="filter-date" placeholder="Filter by Date">
                     <select id="filter-plate">
                         <option value="">Filter by Plate</option>
-                        <!-- Plates will be populated dynamically -->
+                        <?php
+                            $stmt = $conn->prepare("SELECT * FROM cars");
+                            $stmt->execute();
+                            $result = $stmt->get_result();
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<option value='" . $row['plate'] . "'>" . $row['plate'] . "</option>";
+                            }
+                        ?>
                     </select>
                 </div>
 

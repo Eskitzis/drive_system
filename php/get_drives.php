@@ -2,11 +2,11 @@
 // Include the database connection
 include 'db_connection.php'; // Ensure this path is correct
 
-// Check if employee_id is provided in the URL query parameters
-if (isset($_GET['employee_id'])) {
-    $employee_id = (int) $_GET['employee_id']; // Sanitize the employee_id to an integer
+// Check if car_id is provided in the URL query parameters
+if (isset($_GET['car_id'])) {
+    $car_id = (int) $_GET['car_id']; // Sanitize the car_id to an integer
 
-    // Query to get the drives for the selected employee
+    // Query to get all drives for the selected car and fetch the plate from cars
     $query = "
         SELECT 
             drives.drive_date, 
@@ -18,12 +18,12 @@ if (isset($_GET['employee_id'])) {
         JOIN 
             cars ON drives.car_id = cars.id
         WHERE 
-            drives.user_id = ?"; // Using prepared statements for security
+            drives.car_id = ? ORDER BY STR_TO_DATE(drives.drive_date, '%Y-%m-%d') DESC, drives.km_end DESC"; // Using prepared statements for security
 
     // Prepare the query
     if ($stmt = $conn->prepare($query)) {
-        // Bind the employee_id parameter
-        $stmt->bind_param("i", $employee_id);
+        // Bind the car_id parameter
+        $stmt->bind_param("i", $car_id);
 
         // Execute the query
         $stmt->execute();
@@ -51,8 +51,8 @@ if (isset($_GET['employee_id'])) {
         echo json_encode(['error' => 'Failed to prepare statement']);
     }
 } else {
-    // Return error if employee_id is not provided
-    echo json_encode(['error' => 'Employee ID is required']);
+    // Return error if car_id is not provided
+    echo json_encode(['error' => 'Car ID is required']);
 }
 
 // Close the database connection

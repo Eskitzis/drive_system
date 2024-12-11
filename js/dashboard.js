@@ -1,27 +1,3 @@
-// Updated filter logic
-document.querySelectorAll('.list-filter input, .list-filter select').forEach(input => {
-    input.addEventListener('input', () => {
-        const filters = {
-            date: document.getElementById('filter-date').value,
-            plate: document.getElementById('filter-plate').value.toLowerCase(),
-        };
-
-        document.querySelectorAll('tbody tr').forEach(row => {
-            const [date, , , plate] = row.children;
-
-            // Check if the row matches the date filter
-            const rowDate = new Date(date.textContent);
-            const filterDate = filters.date ? new Date(filters.date) : null;
-            const matchesDate = !filterDate || rowDate >= filterDate;
-
-            // Check if the row matches the plate filter
-            const matchesPlate = !filters.plate || plate.textContent.toLowerCase().includes(filters.plate);
-
-            // Show or hide the row based on the filters
-            row.style.display = matchesDate && matchesPlate ? '' : 'none';
-        });
-    });
-});
 $('#employee_name').change(function () {
     var userId = $(this).val(); // Get the selected user's ID
 
@@ -157,23 +133,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // Call the function when the page loads (or when a change happens)
     fetchCarKilometers();
 
-    document.getElementById('car_plate').addEventListener('change', function () {
-        const car_plate = this.value;
-
-        if (car_plate) {
-            // Fetch drives data for the selected employee via AJAX
-            fetchDrivesData(car_plate);
-        }
-    });
-
+    // Add event listeners to filter inputs
     document.querySelectorAll('.list-filter input, .list-filter select').forEach(input => {
         input.addEventListener('input', () => {
             filterDrivesTable();
         });
     });
-    function fetchDrivesData(car_plate) {
+
+    // Function to fetch drives data via AJAX
+    function fetchDrivesData() {
+        const carId = document.getElementById('car_plate').value;
         // Make the AJAX call to the server (adjust URL accordingly)
-        const url = `php/get_drives.php?employee_id=${car_plate}`;
+        const url = `php/get_drives.php?car_id=${carId}`;
         fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -181,7 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error('Error fetching data:', error));
     }
+    fetchDrivesData();
 
+    // Function to populate drives table
     function populateDrivesTable(data) {
         const tbody = document.getElementById('drives-tbody');
         tbody.innerHTML = ''; // Clear any existing rows
@@ -198,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Function to filter drives table
     function filterDrivesTable() {
         const filters = {
             date: document.getElementById('filter-date').value,
@@ -220,7 +194,6 @@ document.addEventListener('DOMContentLoaded', function () {
             row.style.display = matchesDate && matchesPlate ? '' : 'none';
         });
     }
-
     // When the form is submitted
     $('#add_drive').submit(function (e) {
         e.preventDefault(); // Prevent the default form submission
