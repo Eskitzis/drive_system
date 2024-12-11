@@ -35,7 +35,7 @@
     </div>
     <div class="dashboard">
         <div class="dashboard_settings">
-            <form id="add_drie">
+            <form id="add_drive">
                 <select id="employee_name">
                     <option value="1">Toni</option>
                     <option value="2">Toni</option>
@@ -43,12 +43,19 @@
                 <select id="car_plate">
                     <option value="1">DAH-HA 116</option>
                 </select>
+                <label for="date_drive">Datum:</label>
                 <input type="date" id="date_drive">
+                <label for="addr_start">Von:</label>
                 <input type="text" id="addr_start">
+                <label for="addr_end">Nach:</label>
                 <input type="text" id="addr_end">
-                <input type="number" id="km_driven">
-                
-
+                <label for="km_driven">KM Gefahren:</label>
+                <input type="number" id="km_driven" disabled>
+                <label for="km_before">KM Vorher:</label>
+                <input type="number" id="km_before" disabled>
+                <label for="km_now">KM Jetzt:</label>
+                <input type="number" id="km_now" disabled>
+                <button type="submit">Drive hinzufügen</button>
             </form>
         </div>
         <div class="dashboard_calendar">

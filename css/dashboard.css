@@ -17,3 +17,73 @@
     border-radius: 16px;
     padding: 20px;
 }
+form {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+form input,
+form select,
+form button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+form input:disabled {
+    background-color: #f4f4f9;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+form select {
+    appearance: none;
+    background: #fff;
+    cursor: pointer;
+}
+
+form button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+form button:hover {
+    background-color: #45a049;
+}
+
+form button:active {
+    background-color: #3e8e41;
+}
+
+@media (max-width: 480px) {
+    form {
+        padding: 15px;
+    }
+
+    form input,
+    form select,
+    form button {
+        font-size: 12px;
+        padding: 8px;
+    }
+}
