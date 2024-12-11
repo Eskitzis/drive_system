@@ -50,7 +50,7 @@ body {
     transition: opacity 0.1s;
 }
 
-#nav-toggle:checked~#nav-content .nav-button .fas {
+#nav-toggle:checked~#nav-content .nav-button .bx {
     min-width: calc(100% - 16px);
 }
 
@@ -235,7 +235,7 @@ label[for=nav-toggle] {
     transition: opacity 1s;
 }
 
-.nav-button .fas {
+.nav-button .bx {
     transition: min-width 0.2s;
 }
 
@@ -303,7 +303,7 @@ label[for=nav-toggle] {
     top: 394px;
 }
 
-#nav-bar .fas {
+#nav-bar .bx {
     min-width: 3rem;
     text-align: center;
 }
