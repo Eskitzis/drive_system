@@ -57,10 +57,54 @@
                 <input type="number" id="km_now">
                 <button type="submit">Drive hinzufügen</button>
             </form>
+            <hr>
+            <div class="previous_drives">
+                <div class="list-filter">
+                    <input type="date" id="filter-date" placeholder="Filter by Date">
+                    <select id="filter-plate">
+                        <option value="">Filter by Plate</option>
+                        <option value="DAH-HA 116">DAH-HA 116</option>
+                        <option value="XYZ-123">XYZ-123</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>KM Start</th>
+                                <th>KM End</th>
+                                <th>Plate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2024-12-01</td>
+                                <td>12000</td>
+                                <td>12250</td>
+                                <td>DAH-HA 116</td>
+                            </tr>
+                            <tr>
+                                <td>2024-12-02</td>
+                                <td>12250</td>
+                                <td>12500</td>
+                                <td>DAH-HA 116</td>
+                            </tr>
+                            <tr>
+                                <td>2024-12-03</td>
+                                <td>12500</td>
+                                <td>12700</td>
+                                <td>DAH-HA 116</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <div class="dashboard_calendar">
             Calendar
         </div>
     </div>
+    <script>src = "js/dashboard.js"</script>
 </body>
 </html>
