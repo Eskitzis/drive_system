@@ -94,6 +94,8 @@ body {
 #nav-bar a {
     color: inherit;
     text-decoration: inherit;
+    display: flex;
+    align-items: center;
 }
 
 #nav-bar input[type=checkbox] {
@@ -395,4 +397,9 @@ label[for=nav-footer-toggle] {
 #nav-footer-content::-webkit-scrollbar-thumb {
     border-radius: 99px;
     background-color: #D62929;
+}
+#img_logo{
+    width: 27px;
+    height: 27px;
+    margin-right: 2px;
 }

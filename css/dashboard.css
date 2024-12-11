@@ -16,6 +16,7 @@
     background-color: azure;
     border-radius: 16px;
     padding: 20px;
+    margin-right: 10px;
 }
 form label {
     display: block;
