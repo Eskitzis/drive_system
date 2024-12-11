@@ -1,6 +1,8 @@
 <?php
     session_start();
     include('php/db_connection.php');
+    $logged_id = $_SESSION['user_id'];
+    
 ?>
 <!DOCTYPE html>
 <html lang="en">
