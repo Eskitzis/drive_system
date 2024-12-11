@@ -92,7 +92,7 @@ form button:active {
 }
 
 .table-container {
-    max-height: 400px;
+    max-height: 220px;
     /* Set a maximum height for vertical scrolling */
     overflow-y: auto;
     /* Enable vertical scrolling */
