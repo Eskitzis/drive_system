@@ -1,4 +1,4 @@
-// Simple filter logic
+// Updated filter logic
 document.querySelectorAll('.list-filter input, .list-filter select').forEach(input => {
     input.addEventListener('input', () => {
         const filters = {
@@ -8,9 +8,16 @@ document.querySelectorAll('.list-filter input, .list-filter select').forEach(inp
 
         document.querySelectorAll('tbody tr').forEach(row => {
             const [date, , , plate] = row.children;
-            const matchesDate = !filters.date || date.textContent === filters.date;
+
+            // Check if the row matches the date filter
+            const rowDate = new Date(date.textContent);
+            const filterDate = filters.date ? new Date(filters.date) : null;
+            const matchesDate = !filterDate || rowDate >= filterDate;
+
+            // Check if the row matches the plate filter
             const matchesPlate = !filters.plate || plate.textContent.toLowerCase().includes(filters.plate);
 
+            // Show or hide the row based on the filters
             row.style.display = matchesDate && matchesPlate ? '' : 'none';
         });
     });

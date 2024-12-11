@@ -77,7 +77,6 @@ form button:active {
     }
 }
 .list-filter {
-    margin-bottom: 5px;
     display: flex;
     gap: 10px;
 }
@@ -87,7 +86,7 @@ form button:active {
     flex: 1;
     border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 10px;
     box-sizing: border-box;
 }
 
@@ -106,8 +105,9 @@ table {
 
 table th,
 table td {
-    padding: 10px;
+    padding: 15px;
     text-align: left;
+    font-size: 14px;
     border-bottom: 1px solid #ddd;
 }
 
