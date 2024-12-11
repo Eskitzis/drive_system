@@ -122,6 +122,13 @@
             <div id="calendar"></div>
         </div>
     </div>
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Drive Details</h3>
+            <div id="eventDetails"></div>
+        </div>
+    </div>
     <script src="js/dashboard.js"></script>
 </body>
 </html>

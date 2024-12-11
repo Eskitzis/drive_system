@@ -43,7 +43,8 @@ $('#employee_name').change(function () {
 });
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
-    //Calender
+
+    // Calendar
     async function fetchAndRenderCalendar() {
         const selectedEmployeeId = document.getElementById('employee_name').value;
 
@@ -59,12 +60,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     let response = await fetch(`php/get_drives_calendar.php?user_id=${selectedEmployeeId}`);
                     let data = await response.json();
 
-                    let events = data.map(vacation => ({
+                    // Debugging: log the response to check drive_start and drive_end
+                    console.log('Fetched Data:', data);
+
+                    let events = data.map(drive => ({
+                        id: drive.id,  // Include the drive ID to reference later
                         title: drive.license_plate,
-                        start: drive.drive_date,
-                        end: drive.drive_date,
+                        start: drive.drive_date, // Assuming drive_date is in a valid format (YYYY-MM-DD or similar)
+                        end: drive.drive_date,   // Same as start for a one-day event
                         color: '#f45b69',
                         textColor: 'white',
+                        description: `${drive.drive_start} nach ${drive.drive_end}`, // Ensure these fields are correct
+                        kmDriven: drive.km_driven,
+                        kmStart: drive.km_start,
+                        kmEnd: drive.km_end,
+                        driveDate: drive.drive_date, // Date of the drive
                     }));
 
                     successCallback(events);
@@ -72,10 +82,41 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.error('Error fetching events:', error);
                     failureCallback(error);
                 }
+            },
+            eventClick: function (info) {
+                const event = info.event;
+
+                // Create a message to display event details in the modal
+                const eventDetails = `
+                <p><strong>Kennzeichen:</strong> ${event.title}</p>
+                <p><strong>Datum:</strong> ${event.extendedProps.driveDate}</p>
+                <p><strong>Route:</strong> ${event.extendedProps.description}</p>
+                <p><strong>Kilometer Anfahrt:</strong> ${event.extendedProps.kmStart}</p>
+                <p><strong>Kilometer Ankunft:</strong> ${event.extendedProps.kmEnd}</p>
+                <p><strong>Kilometer Gefahren:</strong> ${event.extendedProps.kmDriven}</p>
+            `;
+
+                // Show details in the modal
+                document.getElementById('eventDetails').innerHTML = eventDetails;
+                document.getElementById('eventModal').style.display = "block";
+
+                // Close the modal when the user clicks the close button
+                document.querySelector('.close').onclick = function () {
+                    document.getElementById('eventModal').style.display = "none";
+                }
+
+                // Close the modal if the user clicks anywhere outside of the modal
+                window.onclick = function (event) {
+                    if (event.target == document.getElementById('eventModal')) {
+                        document.getElementById('eventModal').style.display = "none";
+                    }
+                }
             }
         });
+
         calendar.render();
     }
+
     fetchAndRenderCalendar();
     // When the form is submitted
     $('#add_drive').submit(function (e) {
