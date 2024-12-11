@@ -77,7 +77,6 @@ form button:active {
     }
 }
 .list-filter {
-    width: 100%;
     margin-bottom: 5px;
     display: flex;
     gap: 10px;
@@ -93,13 +92,14 @@ form button:active {
 }
 
 .table-container {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 100%;
+    max-height: 400px;
+    /* Set a maximum height for vertical scrolling */
+    overflow-y: auto;
+    /* Enable vertical scrolling */
     overflow-x: auto;
 }
 
 table {
-    width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
 }
