@@ -18,6 +18,15 @@ $('#employee_name').change(function () {
     }
 });
 document.addEventListener('DOMContentLoaded', function () {
+    // Get today's date
+    const today = new Date();
+    // Format the date in ISO format (YYYY-MM-DD)
+    const isoDate = today.toISOString().split('T')[0];
+    // Get the input field
+    const dateInput = document.getElementById('date_drive');
+    // Set the value of the input field to today's date
+    dateInput.value = isoDate;
+    
     const calendarEl = document.getElementById('calendar');
     // Calendar
     async function fetchAndRenderCalendar() {
@@ -194,6 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
             row.style.display = matchesDate && matchesPlate ? '' : 'none';
         });
     }
+
     // When the form is submitted
     $('#add_drive').submit(function (e) {
         e.preventDefault(); // Prevent the default form submission
