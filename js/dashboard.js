@@ -191,7 +191,222 @@ document.addEventListener('DOMContentLoaded', function () {
             row.style.display = matchesDate && matchesPlate ? '' : 'none';
         });
     }
-    
+
+
+    document.getElementById('date_drive').addEventListener('change', setAutomaticLocation);
+
+    async function setAutomaticLocation() {
+        const dateDrive = document.getElementById('date_drive').value;
+        // Validate the input date
+        if (!dateDrive) {
+            console.error('Date drive is empty.');
+            return;
+        }
+        try {
+            // 1. Get user's location
+            const userLocation = await getUserLocation();
+            if (!userLocation) {
+                console.warn('Unable to retrieve user location. Using default coordinates.');
+                setDefaultAddresses(0, 0); // Default to (0, 0) if location is unavailable
+                return;
+            }
+            const { latitude: userLatitude, longitude: userLongitude } = userLocation;
+            console.log(`User location: Lat ${userLatitude}, Lon ${userLongitude}`);
+            // 2. Fetch events for the selected date
+            const events = await fetchEvents(dateDrive);
+            if (!events || events.length === 0) {
+                console.warn('No events found for the selected date. Setting default addresses.');
+                setDefaultAddresses(userLatitude, userLongitude);
+                return;
+            }
+
+            console.log('Events fetched:', events);
+
+            // 3. Find event details
+            const eventDetails = await findEventDetails(events, dateDrive);
+            if (!eventDetails) {
+                console.warn('No matching event found for the selected date. Setting default addresses.');
+                setDefaultAddresses(userLatitude, userLongitude);
+                return;
+            }
+
+            console.log('Event details:', eventDetails);
+
+            const { location: eventLocation, latitude: eventLatitude, longitude: eventLongitude } = eventDetails;
+
+            // 4. Set addresses based on current time and proximity
+            setAddressesBasedOnTimeAndProximity(
+                userLatitude,
+                userLongitude,
+                eventLatitude,
+                eventLongitude,
+                eventLocation
+            );
+        } catch (error) {
+            console.error('Error in setAutomaticLocation:', error);
+        }
+    }
+
+    async function getUserLocation() {
+        if (!navigator.geolocation) {
+            console.error('Geolocation is not supported by your browser.');
+            return null;
+        }
+
+        return new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                },
+                (error) => {
+                    console.error('Geolocation error:', error.message);
+                    resolve(null);
+                }
+            );
+        });
+    }
+
+    async function fetchEvents(dateDrive) {
+        try {
+            const response = await fetch('php/get_location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ drive_date: dateDrive }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch events: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return data.events || [];
+        } catch (error) {
+            console.error('Error fetching events:', error);
+            return null;
+        }
+    }
+
+    async function findEventDetails(events, dateDrive) {
+        for (const event of events) {
+            const eventStartDate = new Date(event.start.dateTime).toISOString().slice(0, 10);
+
+            if (eventStartDate === dateDrive) {
+                console.log('Matching event found:', event);
+
+                if (event.location?.displayName) {
+                    const geocodeResult = await geocodeLocation(event.location.displayName);
+                    if (geocodeResult) {
+                        const formattedAddress = await reverseGeocode(geocodeResult.latitude, geocodeResult.longitude);
+                        return {
+                            location: formattedAddress || event.location.displayName,
+                            latitude: geocodeResult.latitude,
+                            longitude: geocodeResult.longitude,
+                        };
+                    }
+                }
+
+                return { location: event.location?.displayName || null };
+            }
+        }
+
+        console.warn('No matching event for the date.');
+        return null;
+    }
+
+
+    async function geocodeLocation(location) {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json`);
+            const geocodeData = await response.json();
+
+            if (geocodeData.length > 0) {
+                return {
+                    latitude: parseFloat(geocodeData[0].lat),
+                    longitude: parseFloat(geocodeData[0].lon),
+                };
+            }
+        } catch (error) {
+            console.error('Geocoding error:', error);
+        }
+        return null;
+    }
+    async function reverseGeocode(lat, lon) {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+            const geocodeData = await response.json();
+
+            if (geocodeData && geocodeData.address) {
+                const { road, house_number, postcode, city } = geocodeData.address;
+                return `${road || ''} ${house_number || ''}, ${postcode || ''}, ${city || ''}`.trim();
+            }
+        } catch (error) {
+            console.error('Reverse geocoding error:', error);
+        }
+        return null;
+    }
+
+    async function setAddressesBasedOnTimeAndProximity(userLat, userLon, eventLat, eventLon, eventLocation) {
+        const currentHour = new Date().getHours();
+        let userAddress = await reverseGeocode(userLat, userLon);
+        let eventAddress = eventLocation || (eventLat && eventLon ? await reverseGeocode(eventLat, eventLon) : null);
+
+        if (!userAddress) {
+            console.warn('User address unavailable. Using default coordinates.');
+            userAddress = `Default Address`;
+        }
+
+        if (!eventAddress) {
+            console.warn('Event address unavailable. Using user address as fallback.');
+            eventAddress = userAddress;
+        }
+
+        if (currentHour < 11) {
+            setAddresses({ addrStart: userAddress, addrEnd: eventAddress });
+        } else if (currentHour >= 13 && calculateDistance(userLat, userLon, eventLat, eventLon) <= 0.1) {
+            setAddresses({ addrStart: eventAddress, addrEnd: userAddress });
+        } else {
+            setDefaultAddresses(userAddress);
+        }
+    }
+
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of Earth in kilometers
+        const dLat = toRadians(lat2 - lat1);
+        const dLon = toRadians(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    function toRadians(degrees) {
+        return degrees * (Math.PI / 180);
+    }
+
+    function setAddresses({ addrStart, addrEnd }) {
+        console.log('Setting addresses:', { addrStart, addrEnd });
+
+        document.getElementById('addr_start').value = addrStart;
+        document.getElementById('addr_end').value = addrEnd;
+    }
+
+    function setDefaultAddresses(userAddress) {
+        console.log('Setting default addresses:', userAddress);
+
+        setAddresses({
+            addrStart: userAddress,
+            addrEnd: userAddress,
+        });
+    }
+
+    setAutomaticLocation();
+
     // When the form is submitted
     $('#add_drive').submit(function (e) {
         e.preventDefault(); // Prevent the default form submission
