@@ -1,8 +1,10 @@
 <?php
     session_start();
     include('php/db_connection.php');
-    $logged_id = $_SESSION['logged_id'];
-
+    if (!isset($_SESSION['logged_id'])) {
+        header('Location: index.php');
+        exit();
+    }
 ?>
 <!DOCTYPE html>
 <html lang="en">
