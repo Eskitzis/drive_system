@@ -194,7 +194,6 @@ document.addEventListener('DOMContentLoaded', function () {
     
     async function setAutomaticLocation() {
         var dateDrive = $('#date_drive').val();
-
         // Validate the input date
         if (!dateDrive) {
             console.error('Date drive is empty.');
