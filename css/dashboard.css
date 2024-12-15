@@ -26,6 +26,9 @@ form label {
     font-weight: bold;
     color: #333;
 }
+#calendar {
+    height: calc(100vh - 75px);
+}
 
 form input,
 form select,
