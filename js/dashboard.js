@@ -44,24 +44,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     let response = await fetch(`php/get_drives_calendar.php?user_id=${selectedEmployeeId}`);
                     let data = await response.json();
 
-                    // Debugging: log the response to check drive_start and drive_end
-                    //console.log('Fetched Data:', data);
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
 
-                    let events = data.map(drive => ({
-                        id: drive.id,  // Include the drive ID to reference later
-                        title: drive.license_plate,
-                        start: drive.drive_date, // Assuming drive_date is in a valid format (YYYY-MM-DD or similar)
-                        end: drive.drive_date,   // Same as start for a one-day event
-                        color: '#f45b69',
-                        textColor: 'white',
-                        description: `${drive.drive_start} nach ${drive.drive_end}`, // Ensure these fields are correct
-                        kmDriven: drive.km_driven,
-                        kmStart: drive.km_start,
-                        kmEnd: drive.km_end,
-                        driveDate: drive.drive_date, // Date of the drive
-                    }));
-
-                    successCallback(events);
+                    // Merge and pass the events to FullCalendar
+                    successCallback(data);
                 } catch (error) {
                     console.error('Error fetching events:', error);
                     failureCallback(error);
@@ -70,31 +58,31 @@ document.addEventListener('DOMContentLoaded', function () {
             eventClick: function (info) {
                 const event = info.event;
 
-                // Create a message to display event details in the modal
                 const eventDetails = `
-                <p><strong>Kennzeichen:</strong> ${event.title}</p>
-                <p><strong>Datum:</strong> ${event.extendedProps.driveDate}</p>
-                <p><strong>Route:</strong> ${event.extendedProps.description}</p>
-                <p><strong>Kilometer Anfahrt:</strong> ${event.extendedProps.kmStart}</p>
-                <p><strong>Kilometer Ankunft:</strong> ${event.extendedProps.kmEnd}</p>
-                <p><strong>Kilometer Gefahren:</strong> ${event.extendedProps.kmDriven}</p>
+                <p><strong>Title:</strong> ${event.title}</p>
+                <p><strong>Start:</strong> ${event.start}</p>
+                <p><strong>End:</strong> ${event.end}</p>
+                <p><strong>Description:</strong> ${event.extendedProps.description || 'N/A'}</p>
+                ${event.extendedProps.kmDriven ? `
+                    <p><strong>Kilometers Driven:</strong> ${event.extendedProps.kmDriven}</p>
+                    <p><strong>Kilometer Start:</strong> ${event.extendedProps.kmStart}</p>
+                    <p><strong>Kilometer End:</strong> ${event.extendedProps.kmEnd}</p>
+                ` : ''}
+                ${event.extendedProps.location ? `<p><strong>Location:</strong> ${event.extendedProps.location}</p>` : ''}
             `;
 
-                // Show details in the modal
                 document.getElementById('eventDetails').innerHTML = eventDetails;
                 document.getElementById('eventModal').style.display = "block";
 
-                // Close the modal when the user clicks the close button
                 document.querySelector('.close').onclick = function () {
                     document.getElementById('eventModal').style.display = "none";
-                }
+                };
 
-                // Close the modal if the user clicks anywhere outside of the modal
                 window.onclick = function (event) {
                     if (event.target == document.getElementById('eventModal')) {
                         document.getElementById('eventModal').style.display = "none";
                     }
-                }
+                };
             }
         });
 
@@ -203,6 +191,113 @@ document.addEventListener('DOMContentLoaded', function () {
             row.style.display = matchesDate && matchesPlate ? '' : 'none';
         });
     }
+    
+    async function setAutomaticLocation() {
+        var dateDrive = $('#date_drive').val();
+
+        // Validate the input date
+        if (!dateDrive) {
+            console.error('Date drive is empty.');
+            return;
+        }
+
+        // Get the current time
+        var currentTime = new Date();
+        var currentHour = currentTime.getHours();
+
+        // Get live location of the user
+        navigator.geolocation.getCurrentPosition(async function (position) {
+            var userLatitude = position.coords.latitude;
+            var userLongitude = position.coords.longitude;
+
+            try {
+                // Fetch event location from the backend
+                let response = await fetch('php/get_location.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ drive_date: dateDrive })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Request Error: ${response.statusText}`);
+                }
+
+                let data = await response.json();
+
+                if (data.error) {
+                    console.error('Error fetching event location:', data.error);
+                    return;
+                }
+
+                // Extract event location
+                let eventLocation = data.addr_start; // Using the event location for both start and end
+                let eventLatitude = null;
+                let eventLongitude = null;
+
+                // Optional: Use a geocoding service to get lat/long for `eventLocation`
+                if (eventLocation) {
+                    let geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json`);
+                    let geocodeData = await geocodeResponse.json();
+
+                    if (geocodeData && geocodeData.length > 0) {
+                        eventLatitude = parseFloat(geocodeData[0].lat);
+                        eventLongitude = parseFloat(geocodeData[0].lon);
+                    }
+                }
+
+                // Logic for addr_start
+                if (currentHour < 11) {
+                    $('#addr_start').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
+                } else if (currentHour >= 13 && eventLatitude && eventLongitude) {
+                    let distance = calculateDistance(userLatitude, userLongitude, eventLatitude, eventLongitude);
+                    if (distance <= 0.1) {
+                        $('#addr_start').val(eventLocation);
+                    } else {
+                        $('#addr_start').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
+                    }
+                }
+
+                // Logic for addr_end
+                if (currentHour < 11) {
+                    $('#addr_end').val(eventLocation);
+                } else if (currentHour >= 13 && eventLatitude && eventLongitude) {
+                    let distance = calculateDistance(userLatitude, userLongitude, eventLatitude, eventLongitude);
+                    if (distance > 0.1) {
+                        $('#addr_end').val(eventLocation);
+                    } else {
+                        $('#addr_end').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching event location:', error);
+            }
+        });
+    }
+
+    // Helper function to calculate the distance between two coordinates in kilometers
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of the Earth in kilometers
+        const dLat = toRadians(lat2 - lat1);
+        const dLon = toRadians(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in kilometers
+    }
+
+    function toRadians(degrees) {
+        return degrees * (Math.PI / 180);
+    }
+
+    $('#date_drive').on('change', function () {
+        setAutomaticLocation();
+    });
+
+    // Initial call to setAutomaticLocation
+    setAutomaticLocation();
+
 
     // When the form is submitted
     $('#add_drive').submit(function (e) {

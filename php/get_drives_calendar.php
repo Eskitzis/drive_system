@@ -1,42 +1,100 @@
 <?php
 session_start();
-include('db_connection.php'); // Use shared connection logic
+include('db_connection.php');
+
+function fetchGraphCalendarEvents($accessToken)
+{
+    $url = "https://graph.microsoft.com/v1.0/me/events?\$select=subject,body,bodyPreview,organizer,attendees,start,end,location";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer $accessToken",
+        "Content-Type: application/json"
+    ]);
+
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        throw new Exception('Request Error: ' . curl_error($ch));
+    }
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        throw new Exception("Microsoft Graph API returned status code $httpCode: $response");
+    }
+
+    return json_decode($response, true);
+}
 
 try {
-    // Ensure user_id is provided and valid
     if (!isset($_GET['user_id']) || !is_numeric($_GET['user_id'])) {
         throw new Exception('Invalid user ID');
     }
 
-    // Get the logged-in user ID from the query parameter
     $logged_id = intval($_GET['user_id']);
 
-    // Prepare a query that joins the drives table with the cars table
+    // Fetch drives from database
     $stmt = $conn->prepare("
         SELECT drives.*, cars.plate AS license_plate
         FROM drives
         JOIN cars ON drives.car_id = cars.id
         WHERE drives.user_id = ?
     ");
-
-    // Bind the user ID parameter to the query
     $stmt->bind_param('i', $logged_id);
     $stmt->execute();
-
-    // Fetch the results as an associative array
     $result = $stmt->get_result();
 
+    $drives = [];
     if ($result->num_rows > 0) {
-        // If records exist, return the data as a JSON response
-        $drive = $result->fetch_all(MYSQLI_ASSOC);
-        echo json_encode($drive); // Ensure drive_start and drive_end are in the result
-    } else {
-        // If no records found, return an empty array
-        echo json_encode([]);
+        $drives = $result->fetch_all(MYSQLI_ASSOC);
     }
 
+    // Fetch Outlook events from Microsoft Graph
+    $accessToken = $_SESSION['microsoft_access_token'];
+    if (!$accessToken) {
+        throw new Exception('Access token not available. Please log in.');
+    }
+
+    $outlookEvents = fetchGraphCalendarEvents($accessToken);
+
+    // Transform database events to match FullCalendar format
+    $dbEvents = array_map(function ($drive) {
+        return [
+            'id' => $drive['id'],
+            'title' => $drive['license_plate'],
+            'start' => $drive['drive_date'],
+            'end' => $drive['drive_date'], // Assuming one-day events
+            'color' => '#f45b69',
+            'textColor' => 'white',
+            'description' => "{$drive['drive_start']} nach {$drive['drive_end']}",
+            'kmDriven' => $drive['km_driven'],
+            'kmStart' => $drive['km_start'],
+            'kmEnd' => $drive['km_end'],
+            'driveDate' => $drive['drive_date'],
+        ];
+    }, $drives);
+
+    // Transform Outlook events to match FullCalendar format
+    $graphEvents = array_map(function ($event) {
+        return [
+            'id' => $event['id'],
+            'title' => $event['subject'],
+            'start' => $event['start']['dateTime'],
+            'end' => $event['end']['dateTime'],
+            'location' => $event['location']['displayName'],
+            'description' => $event['bodyPreview'],
+        ];
+    }, $outlookEvents['value']);
+
+    // Merge both sources
+    $mergedEvents = array_merge($dbEvents, $graphEvents);
+
+    echo json_encode($mergedEvents);
 } catch (Exception $e) {
-    // In case of an error, send a 500 error response
     http_response_code(500);
     echo json_encode(['error' => $e->getMessage()]);
 }

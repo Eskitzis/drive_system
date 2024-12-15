@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Successful login: Set session variables and send success response
             $_SESSION['user_role'] = $row['user_role'];
             $_SESSION['logged_id'] = $row['id'];
+            $_SESSION['microsoft_access_token'] = $row['microsoft_access_token'];
             echo json_encode(['success' => true]);  // Respond with success
         } else {
             // Invalid password
