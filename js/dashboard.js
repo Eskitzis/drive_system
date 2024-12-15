@@ -193,83 +193,73 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     async function setAutomaticLocation() {
-        var dateDrive = $('#date_drive').val();
-        // Validate the input date
+        const dateDrive = $('#date_drive').val();
         if (!dateDrive) {
             console.error('Date drive is empty.');
             return;
         }
 
-        // Get the current time
-        var currentTime = new Date();
-        var currentHour = currentTime.getHours();
+        if (!navigator.geolocation) {
+            console.error('Geolocation is not supported by this browser.');
+            return;
+        }
 
-        // Get live location of the user
-        navigator.geolocation.getCurrentPosition(async function (position) {
-            var userLatitude = position.coords.latitude;
-            var userLongitude = position.coords.longitude;
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const userLatitude = position.coords.latitude;
+            const userLongitude = position.coords.longitude;
 
             try {
-                // Fetch event location from the backend
-                let response = await fetch('php/get_location.php', {
+                const response = await fetch('php/get_location.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ drive_date: dateDrive })
+                    body: new URLSearchParams({ drive_date: dateDrive }),
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Request Error: ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Request Error: ${response.statusText}`);
 
-                let data = await response.json();
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
 
-                if (data.error) {
-                    console.error('Error fetching event location:', data.error);
-                    return;
-                }
+                const eventLocation = data.addr_start;
+                let eventLatitude = null, eventLongitude = null;
 
-                // Extract event location
-                let eventLocation = data.addr_start; // Using the event location for both start and end
-                let eventLatitude = null;
-                let eventLongitude = null;
-
-                // Optional: Use a geocoding service to get lat/long for `eventLocation`
                 if (eventLocation) {
-                    let geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json`);
-                    let geocodeData = await geocodeResponse.json();
-
-                    if (geocodeData && geocodeData.length > 0) {
-                        eventLatitude = parseFloat(geocodeData[0].lat);
-                        eventLongitude = parseFloat(geocodeData[0].lon);
+                    const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json`);
+                    if (geocodeResponse.ok) {
+                        const geocodeData = await geocodeResponse.json();
+                        if (geocodeData.length > 0) {
+                            eventLatitude = parseFloat(geocodeData[0].lat);
+                            eventLongitude = parseFloat(geocodeData[0].lon);
+                        }
                     }
                 }
 
-                // Logic for addr_start
-                if (currentHour < 11) {
-                    $('#addr_start').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
-                } else if (currentHour >= 13 && eventLatitude && eventLongitude) {
-                    let distance = calculateDistance(userLatitude, userLongitude, eventLatitude, eventLongitude);
-                    if (distance <= 0.1) {
-                        $('#addr_start').val(eventLocation);
-                    } else {
-                        $('#addr_start').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
-                    }
-                }
+                const useEventLocation = (lat, lon) =>
+                    eventLatitude && eventLongitude && calculateDistance(lat, lon, eventLatitude, eventLongitude) <= 0.1;
 
-                // Logic for addr_end
-                if (currentHour < 11) {
-                    $('#addr_end').val(eventLocation);
-                } else if (currentHour >= 13 && eventLatitude && eventLongitude) {
-                    let distance = calculateDistance(userLatitude, userLongitude, eventLatitude, eventLongitude);
-                    if (distance > 0.1) {
-                        $('#addr_end').val(eventLocation);
-                    } else {
-                        $('#addr_end').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
-                    }
-                }
+                $('#addr_start').val(
+                    currentHour < 11
+                        ? `Lat: ${userLatitude}, Lon: ${userLongitude}`
+                        : useEventLocation(userLatitude, userLongitude)
+                            ? eventLocation
+                            : `Lat: ${userLatitude}, Lon: ${userLongitude}`
+                );
+
+                $('#addr_end').val(
+                    currentHour < 11
+                        ? eventLocation
+                        : useEventLocation(userLatitude, userLongitude)
+                            ? `Lat: ${userLatitude}, Lon: ${userLongitude}`
+                            : eventLocation
+                );
             } catch (error) {
                 console.error('Error fetching event location:', error);
             }
+        }, (error) => {
+            console.error('Geolocation error:', error.message);
         });
     }
 
