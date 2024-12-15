@@ -1,12 +1,15 @@
 <?php
 session_start();
 include('db_connection.php');
-function fetchGraphCalendarEvents($accessToken, $dateDrive)
-{
-    $startDateTime = $dateDrive . "T00:00:00Z";
-    $endDateTime = $dateDrive . "T23:59:59Z";
-    $url = "https://graph.microsoft.com/v1.0/me/events?\$select=location,start,end&\$filter=start/dateTime ge '$startDateTime' and end/dateTime le '$endDateTime'";
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
+function fetchGraphCalendarEvents($accessToken)
+{
+    // Microsoft Graph API URL for fetching events
+    $url = "https://graph.microsoft.com/v1.0/me/events?\$select=subject,body,bodyPreview,organizer,attendees,start,end,location";
+
+    // Initialize cURL
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -32,34 +35,18 @@ function fetchGraphCalendarEvents($accessToken, $dateDrive)
 }
 
 try {
-    $dateDrive = $_POST['drive_date'];
-    if (!$dateDrive) {
-        throw new Exception('Drive date is required');
-    }
-
     $accessToken = $_SESSION['microsoft_access_token'];
     if (!$accessToken) {
         throw new Exception('Access token not available. Please log in.');
     }
 
-    $events = fetchGraphCalendarEvents($accessToken, $dateDrive);
+    $events = fetchGraphCalendarEvents($accessToken);
 
-    if (!empty($events['value'])) {
-        // Assuming we use the first event for the day
-        $eventLocation = $events['value'][0]['location']['displayName'] ?? 'Unknown location';
-
-        echo json_encode([
-            'addr_start' => $eventLocation, // Default addr_start
-            'addr_end' => $eventLocation    // Default addr_end
-        ]);
-    } else {
-        echo json_encode([
-            'addr_start' => '',
-            'addr_end' => ''
-        ]);
-    }
+    echo json_encode([
+        'events' => $events['value'] ?? []
+    ]);
 } catch (Exception $e) {
-    http_response_code(500);
+    error_log("Error: " . $e->getMessage());
     echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

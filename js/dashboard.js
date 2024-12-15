@@ -193,73 +193,95 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     async function setAutomaticLocation() {
-        const dateDrive = $('#date_drive').val();
+        var dateDrive = $('#date_drive').val();
+        // Validate the input date
         if (!dateDrive) {
             console.error('Date drive is empty.');
             return;
         }
 
-        if (!navigator.geolocation) {
-            console.error('Geolocation is not supported by this browser.');
-            return;
-        }
+        // Get the current time
+        var currentTime = new Date();
+        var currentHour = currentTime.getHours();
 
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const userLatitude = position.coords.latitude;
-            const userLongitude = position.coords.longitude;
+        // Get live location of the user
+        navigator.geolocation.getCurrentPosition(async function (position) {
+            var userLatitude = position.coords.latitude;
+            var userLongitude = position.coords.longitude;
 
             try {
-                const response = await fetch('php/get_location.php', {
+                // Fetch events from the backend (entire calendar)
+                let response = await fetch('php/get_location.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ drive_date: dateDrive }),
+                    body: new URLSearchParams({ drive_date: dateDrive })
                 });
 
-                if (!response.ok) throw new Error(`Request Error: ${response.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`Request Error: ${response.statusText}`);
+                }
 
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
+                let data = await response.json();
 
-                const eventLocation = data.addr_start;
-                let eventLatitude = null, eventLongitude = null;
+                if (data.error) {
+                    console.error('Error fetching event location:', data.error);
+                    return;
+                }
 
-                if (eventLocation) {
-                    const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json`);
-                    if (geocodeResponse.ok) {
-                        const geocodeData = await geocodeResponse.json();
-                        if (geocodeData.length > 0) {
-                            eventLatitude = parseFloat(geocodeData[0].lat);
-                            eventLongitude = parseFloat(geocodeData[0].lon);
+                // Extract event details
+                let eventLocation = '';
+                let eventLatitude = null;
+                let eventLongitude = null;
+
+                // Loop through all events and find the one for the selected date
+                data.events.forEach(event => {
+                    let eventStart = new Date(event.start.dateTime);
+                    let eventEnd = new Date(event.end.dateTime);
+
+                    // Compare event start and end with the selected date (dateDrive)
+                    if (eventStart.toISOString().slice(0, 10) === dateDrive) {
+                        eventLocation = event.location.displayName;
+                        // If needed, use geocoding to get lat/lon of the event location
+                        if (eventLocation) {
+                            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json`)
+                                .then(response => response.json())
+                                .then(geocodeData => {
+                                    if (geocodeData && geocodeData.length > 0) {
+                                        eventLatitude = parseFloat(geocodeData[0].lat);
+                                        eventLongitude = parseFloat(geocodeData[0].lon);
+                                    }
+                                })
+                                .catch(error => console.error('Geocoding error:', error));
                         }
+                    }
+                });
+
+                // Logic for addr_start
+                if (currentHour < 11) {
+                    $('#addr_start').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
+                } else if (currentHour >= 13 && eventLatitude && eventLongitude) {
+                    let distance = calculateDistance(userLatitude, userLongitude, eventLatitude, eventLongitude);
+                    if (distance <= 0.1) {
+                        $('#addr_start').val(eventLocation);
+                    } else {
+                        $('#addr_start').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
                     }
                 }
 
-                const useEventLocation = (lat, lon) =>
-                    eventLatitude && eventLongitude && calculateDistance(lat, lon, eventLatitude, eventLongitude) <= 0.1;
-
-                $('#addr_start').val(
-                    currentHour < 11
-                        ? `Lat: ${userLatitude}, Lon: ${userLongitude}`
-                        : useEventLocation(userLatitude, userLongitude)
-                            ? eventLocation
-                            : `Lat: ${userLatitude}, Lon: ${userLongitude}`
-                );
-
-                $('#addr_end').val(
-                    currentHour < 11
-                        ? eventLocation
-                        : useEventLocation(userLatitude, userLongitude)
-                            ? `Lat: ${userLatitude}, Lon: ${userLongitude}`
-                            : eventLocation
-                );
+                // Logic for addr_end
+                if (currentHour < 11) {
+                    $('#addr_end').val(eventLocation);
+                } else if (currentHour >= 13 && eventLatitude && eventLongitude) {
+                    let distance = calculateDistance(userLatitude, userLongitude, eventLatitude, eventLongitude);
+                    if (distance > 0.1) {
+                        $('#addr_end').val(eventLocation);
+                    } else {
+                        $('#addr_end').val(`Lat: ${userLatitude}, Lon: ${userLongitude}`);
+                    }
+                }
             } catch (error) {
                 console.error('Error fetching event location:', error);
             }
-        }, (error) => {
-            console.error('Geolocation error:', error.message);
         });
     }
 
