@@ -1,7 +1,7 @@
 <?php
-$servername = "localhost";  // Default for XAMPP
-$username = "root";  // Default username for XAMPP
-$password = "";  // Default password for XAMPP (blank)
+$servername = "v2202208181594198845.nicesrv.de";  // Default for XAMPP
+$username = "eskitzis";  // Default username for XAMPP
+$password = "Makaroni_1!";  // Default password for XAMPP (blank)
 $database = "drive_db";  // Replace with your database name
 
 // Create connection
